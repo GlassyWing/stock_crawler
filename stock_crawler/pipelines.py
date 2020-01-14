@@ -6,9 +6,9 @@
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 
 import numpy as np
-import psycopg2.errors as errors
-from psycopg2.pool import ThreadedConnectionPool
 from scrapy.exceptions import DropItem
+
+from stock_crawler.db_utils import DBUtils
 
 
 class QuotesPipeline(object):
@@ -40,57 +40,85 @@ class QuotesPipeline(object):
         return item
 
 
-class PostgresPipeline(object):
-    """保存至postgres数据库"""
-    UPSERT_SQL = f"""
-        INSERT INTO quotes (NAME, CODE, OPENING_PRICE, LATEST_PRICE, QUOTE_CHANGE,
-        CHANGE, VOLUME, TURNOVER, AMPLITUDE, TURNOVER_RATE, "PE_ratio", VOLUME_RATIO,
-        MAX_PRICE, MIN_PRICE, CLOSING_PRICE, "PB_ratio", MARKET, TIME)
-        VALUES 
-        ({','.join(['%s'] * 18)})
-        ON CONFLICT ON CONSTRAINT quotes_pkey
-        DO UPDATE SET latest_price = excluded.latest_price,
-                      change = excluded.change,
-                      volume = excluded.volume,
-                      turnover = excluded.turnover,
-                      amplitude = excluded.amplitude,
-                      turnover_rate = excluded.turnover_rate,
-                      volume_ratio = excluded.volume_ratio,
-                      max_price = excluded.max_price,
-                      min_price = excluded.min_price
-    """
+class CompaniesPipeline(object):
+    """除掉单位"""
+
+    def process_item(self, item, spider):
+
+        if item['srkpj'] == '--' \
+                or item['srspj'] == '--' \
+                or item['srhsl'] == '--' \
+                or item['srzgj'] == '--':
+            raise DropItem("Company data seems like not ready.")
+
+        new_iem = {}
+        new_iem.update(item)
+
+        for key, value in item.items():
+            if value == '--':
+                new_iem[key] = None
+            else:
+                if key == 'fxl' \
+                        or key == 'fxfy' \
+                        or key == 'fxzsz' \
+                        or key == 'mjzjje' \
+                        or key == 'wxpszql' \
+                        or key == 'djzql' \
+                        or key == 'zczb':
+
+                    if value[-1] == '亿':
+                        new_iem[key] = float(value[:-1]) * 1e8
+                    elif value[-1] == '万':
+                        new_iem[key] = float(value[:-1]) * 1e4
+                    elif value[-1] == '千':
+                        new_iem[key] = float(value[:-1]) * 1e3
+                    else:
+                        new_iem[key] = float(value[:-1])
+                elif key == 'djzql' or key == 'srhsl' or key == 'wxpszql':
+                    new_iem[key] = float(value[:-1].replace(',', '')) / 100.
+                else:
+                    if key != 'code':
+                        try:
+                            new_iem[key] = float(value)
+                        except Exception:
+                            pass
+
+        return new_iem
+
+
+class CompaniesPostgresPipeline(object):
+    """保存公司信息至postgres数据库"""
+
+    def __init__(self, database_config):
+        self.database_config = database_config
+
+    def process_item(self, item, spider):
+        self.db_utils.upsert_company(item)
+        return item
+
+    def open_spider(self, spider):
+        self.db_utils = DBUtils.init(self.database_config)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(database_config=crawler.settings.get('POSTGRESQL_CONFIG'))
+
+
+class QuotesPostgresPipeline(object):
+    """保存股市行情信息至postgres数据库"""
 
     def __init__(self, database_config):
         self.database_config = database_config
 
     def process_item(self, item, spider):
         quotes = item['quotes']
-
-        conn = self.conn_pool.getconn()
-        try:
-            with conn.cursor() as cur:
-                try:
-                    cur.executemany(PostgresPipeline.UPSERT_SQL, quotes)
-                    conn.commit()
-                except errors.UniqueViolation as e:
-                    print("当前记录已存在")
-                except errors.NotNullViolation as e:
-                    print("违反非空约束")
-        finally:
-            self.conn_pool.putconn(conn)
+        self.db_utils.upsert_quotes(quotes)
 
         return item
 
     def open_spider(self, spider):
-        pool_config = self.database_config['pool']
-        conn_config = self.database_config['conn']
-        self.conn_pool = ThreadedConnectionPool(minconn=pool_config['min'],
-                                                maxconn=pool_config['max'],
-                                                **conn_config)
+        self.db_utils = DBUtils.init(self.database_config)
 
     @classmethod
     def from_crawler(cls, crawler):
         return cls(database_config=crawler.settings.get('POSTGRESQL_CONFIG'))
-
-    def close_spider(self, spider):
-        self.conn_pool.closeall()

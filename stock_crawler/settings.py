@@ -8,6 +8,7 @@
 #     https://docs.scrapy.org/en/latest/topics/settings.html
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
+import os
 
 BOT_NAME = 'stock_crawler'
 
@@ -27,6 +28,9 @@ POSTGRESQL_CONFIG = {
         'password': 'postgres'
     }
 }
+
+# company codes index file path
+COMPANY_CODES_INDEX = os.path.join(os.path.dirname(__file__), "../index/codes.csv")
 
 # quote records size for each page
 PAGE_SIZE = 200
@@ -82,7 +86,7 @@ ROBOTSTXT_OBEY = False
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     'stock_crawler.pipelines.QuotesPipeline': 300,
-    'stock_crawler.pipelines.PostgresPipeline': 301,
+    'stock_crawler.pipelines.QuotesPostgresPipeline': 301,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

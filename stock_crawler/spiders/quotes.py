@@ -171,24 +171,22 @@ class QuotesSpider(scrapy.Spider):
         day = now_time.day
         hour = now_time.hour
 
-        now_minute = now_time.minute / 60.
-
-        # 每半小时为一个记录时间点
-        minute_series = np.array([0, 0.5, 1])
-
-        min_ind = np.argmin(np.abs(now_minute - minute_series))
-
-        minute = int(minute_series[min_ind] * 60)
-        if minute == 60:
-            now_time = now_time + timedelta(hour + 1)
-            hour = now_time.hour
-            minute = 0
+        # now_minute = now_time.minute / 60.
+        #
+        # # 每半小时为一个记录时间点
+        # minute_series = np.array([0, 0.5, 1])
+        #
+        # min_ind = np.argmin(np.abs(now_minute - minute_series))
+        #
+        # minute = int(minute_series[min_ind] * 60)
+        # if minute == 60:
+        #     now_time = now_time + timedelta(hour + 1)
+        #     hour = now_time.hour
+        #     minute = 0
 
         return datetime(year=year,
                         month=month,
-                        day=day,
-                        hour=hour,
-                        minute=minute)
+                        day=day)
 
     def _map_to_value(self, data):
         """获得指定域的值"""
