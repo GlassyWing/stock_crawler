@@ -87,6 +87,7 @@ ROBOTSTXT_OBEY = False
 ITEM_PIPELINES = {
     'stock_crawler.pipelines.QuotesPipeline': 300,
     'stock_crawler.pipelines.QuotesPostgresPipeline': 301,
+    'stock_crawler.pipelines.UpdateCompanyCodes': 302
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

@@ -3,6 +3,7 @@ from multiprocessing import Lock
 
 from psycopg2 import errors
 from psycopg2.pool import ThreadedConnectionPool
+import psycopg2 as pg
 
 
 class DBUtils:
@@ -42,12 +43,28 @@ class DBUtils:
                             zczb = excluded.zczb
         """
 
-    CODES_QUERY_SQL = f"""
+    CODES_QUERY_SQL = """
         SELECT DISTINCT code FROM quotes
     """
 
-    MANAGE_QUERY_SQL = f"""
+    MANAGE_QUERY_SQL = """
         SELECT manage FROM companies order by code
+    """
+
+    POS_VEC_UPDATE_SQL = """
+        UPDATE companies SET pos_vec = %s WHERE code = %s
+    """
+
+    CODES_MANAGE_QUERY_SQL = """
+        select code, manage from companies 
+    """
+
+    POS_VEC_QUERY_SQL = """
+        SELECT pos_vec FROM companies WHERE code = %s
+    """
+
+    NEED_UPDADE_CODE_SQL = """
+        SELECT DISTINCT code FROM quotes EXCEPT SELECT code FROM companies
     """
 
     def __init__(self, database_config):
@@ -119,6 +136,54 @@ class DBUtils:
             return manage
         except Exception as e:
             print(e)
+        finally:
+            self.conn_pool.putconn(conn)
+
+    def get_all_codes_manage(self):
+        """获取公司所有代码和经营范围"""
+        conn = self.conn_pool.getconn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(self.CODES_MANAGE_QUERY_SQL)
+                result = cur.fetchall()
+            return result
+        except Exception as e:
+            print(e)
+        finally:
+            self.conn_pool.putconn(conn)
+
+    def update_company_pos_vec(self, code, pos_vec):
+        """设置公司在行业语义空间中的位置"""
+        conn = self.conn_pool.getconn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(self.POS_VEC_UPDATE_SQL, (pos_vec, code))
+                conn.commit()
+        except Exception as e:
+            print(e)
+        finally:
+            self.conn_pool.putconn(conn)
+
+    def get_pos_vec(self, code):
+        """获得语义空间位置向量"""
+        conn = self.conn_pool.getconn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(self.POS_VEC_QUERY_SQL, (code,))
+                pos_vec = cur.fetchone()
+            return pos_vec
+
+        finally:
+            self.conn_pool.putconn(conn)
+
+    def get_need_update_codes(self):
+        """获得所有需要更新的公司代码"""
+        conn = self.conn_pool.getconn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(self.NEED_UPDADE_CODE_SQL)
+                result = cur.fetchall()
+            return result
         finally:
             self.conn_pool.putconn(conn)
 

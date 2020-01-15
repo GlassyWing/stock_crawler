@@ -6,6 +6,8 @@
 # See: https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 
 import numpy as np
+import pandas as pd
+from scrapy.crawler import Crawler
 from scrapy.exceptions import DropItem
 
 from stock_crawler.db_utils import DBUtils
@@ -122,3 +124,26 @@ class QuotesPostgresPipeline(object):
     @classmethod
     def from_crawler(cls, crawler):
         return cls(database_config=crawler.settings.get('POSTGRESQL_CONFIG'))
+
+
+class UpdateCompanyCodes(object):
+    """更新公司索引"""
+
+    def __init__(self, database_config, codes_save_path):
+        self.database_config = database_config
+        self.codes_save_path = codes_save_path
+
+    def process_item(self, item, spider):
+        return item
+
+    def open_spider(self, spider):
+        self.db_utils = DBUtils.init(self.database_config)
+
+    def close_spider(self, spider):
+        codes = self.db_utils.get_need_update_codes()
+        pd.DataFrame(data=codes, columns=['code']).to_csv(self.codes_save_path, index=False, header=False)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(database_config=crawler.settings.get('POSTGRESQL_CONFIG'),
+                   codes_save_path=crawler.settings.get('COMPANY_CODES_INDEX'))
