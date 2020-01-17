@@ -67,6 +67,16 @@ class DBUtils:
         SELECT DISTINCT code FROM quotes EXCEPT SELECT code FROM companies
     """
 
+    MAIN_TARGET_INSERT_SQL = f"""
+        INSERT INTO main_target (code, date, jbmgsy, kfmgsy, xsmgsy, mgjzc, mggjj, mgwfply, 
+        mgjyxjl, yyzsr, mlr, gsjlr, kfjlr, yyzsrtbzz, gsjlrtbzz, kfjlrtbzz, yyzsrgdhbzz,
+        gsjlrgdhbzz, kfjlrgdhbzz, jqjzcsyl, tbjzcsyl, tbzzcsyl, mll, jll, sjsl, yskyysr, jyxjlyysr,
+        xsxjlyysr, zzczzl, yszkzzts, chzzts, zcfzl, ldzczfz, ldbl, sdbl) 
+        VALUES 
+        ({','.join(['%s'] * 35)})
+        ON CONFLICT DO NOTHING 
+    """
+
     def __init__(self, database_config):
         self.database_config = database_config
         pool_config = self.database_config['pool']
@@ -184,6 +194,20 @@ class DBUtils:
                 cur.execute(self.NEED_UPDADE_CODE_SQL)
                 result = cur.fetchall()
             return result
+        finally:
+            self.conn_pool.putconn(conn)
+
+    def insert_main_target(self, targets):
+        """保存主要指标"""
+        conn = self.conn_pool.getconn()
+        try:
+            with conn.cursor() as cur:
+                cur.executemany(self.MAIN_TARGET_INSERT_SQL, targets)
+                conn.commit()
+        except errors.UniqueViolation as e:
+            print("当前记录已存在")
+        except errors.NotNullViolation as e:
+            print("违反非空约束")
         finally:
             self.conn_pool.putconn(conn)
 

@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 from apscheduler.schedulers.twisted import TwistedScheduler
 from scrapy.crawler import CrawlerProcess
@@ -34,6 +35,9 @@ if __name__ == '__main__':
     cron = str2bool(args.cron, False)
 
     process = CrawlerProcess(get_project_settings())
+
+    # 设置日志级别
+    logging.getLogger('scrapy.core.scraper').setLevel(logging.WARNING)
 
     if not cron:
         sequence_run()

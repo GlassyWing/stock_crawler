@@ -147,3 +147,22 @@ class UpdateCompanyCodes(object):
     def from_crawler(cls, crawler):
         return cls(database_config=crawler.settings.get('POSTGRESQL_CONFIG'),
                    codes_save_path=crawler.settings.get('COMPANY_CODES_INDEX'))
+
+
+class MainTargetsPostgresPipeline(object):
+    """保存公司主要指标至数据库"""
+
+    def __init__(self, database_config):
+        self.database_config = database_config
+
+    def open_spider(self, spider):
+        self.db_utils = DBUtils.init(self.database_config)
+
+    def process_item(self, item, spider):
+        targets = item['targets']
+        print(targets)
+        self.db_utils.insert_main_target(targets)
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(database_config=crawler.settings.get('POSTGRESQL_CONFIG'))

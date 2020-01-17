@@ -16,6 +16,11 @@ class QuoteItem(scrapy.Item):
     size = Field()
 
 
+class MainTargetItem(scrapy.Item):
+    targets = Field()
+    size = Field()
+
+
 class CompanyItem(scrapy.Item):
     code = Field()
     name = Field()
