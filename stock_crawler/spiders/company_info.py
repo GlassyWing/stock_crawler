@@ -76,7 +76,7 @@ class CompanyInfoSpider(scrapy.Spider):
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):
-        with open(crawler.settings['COMPANY_CODES_INDEX'], 'r') as file:
+        with open(crawler.settings['UPDATE_COMPANY_CODES'], 'r') as file:
             codes = file.readlines()
         print(codes)
         return cls(companies=codes)

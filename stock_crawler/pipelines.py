@@ -146,7 +146,7 @@ class UpdateCompanyCodes(object):
     @classmethod
     def from_crawler(cls, crawler):
         return cls(database_config=crawler.settings.get('POSTGRESQL_CONFIG'),
-                   codes_save_path=crawler.settings.get('COMPANY_CODES_INDEX'))
+                   codes_save_path=crawler.settings.get('UPDATE_COMPANY_CODES'))
 
 
 class MainTargetsPostgresPipeline(object):

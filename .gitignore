@@ -2,11 +2,11 @@
 .idea/
 data/
 test/
-tests/
 logs/
 checkpoints/
 output/
 weights/
+index/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

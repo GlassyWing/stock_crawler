@@ -65,6 +65,12 @@ class MainTargetSpider(scrapy.Spider):
 
         return main_target_item
 
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        with open(crawler.settings['COMPANY_CODES_INDEX'], 'r') as file:
+            codes = file.readlines()
+        return cls(companies=codes)
+
 
 if __name__ == '__main__':
     process = CrawlerProcess()

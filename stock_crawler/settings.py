@@ -22,15 +22,18 @@ POSTGRESQL_CONFIG = {
         'max': 30
     },
     'conn': {
-        'host': 'localhost',
-        'port': 5432,
+        'host': '172.18.0.152',
+        'port': 6666,
         'user': 'postgres',
         'password': 'postgres'
     }
 }
 
-# company codes index file path
+# 所有公司的索引代码
 COMPANY_CODES_INDEX = os.path.join(os.path.dirname(__file__), "../index/codes.csv")
+
+# 每次爬取行情信息后，查找遗漏的公司信息并进行更新
+UPDATE_COMPANY_CODES = os.path.join(os.path.dirname(__file__), "../index/update.csv")
 
 # quote records size for each page
 PAGE_SIZE = 200
